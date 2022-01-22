@@ -16,7 +16,7 @@
 #include "esp_spiffs.h"
 #include "mbedtls/md5.h"
 
-static const char *TAG = "example";
+static const char *TAG = "main";
 
 static void read_hello_txt(void)
 {
@@ -81,7 +81,7 @@ static void compute_alice_txt_md5(void)
     fclose(f);
 }
 
-void app_main(void)
+extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "Initializing SPIFFS");
 
