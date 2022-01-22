@@ -1,7 +1,7 @@
 idf_component_register(SRCS "esp32-react.cpp"
                     INCLUDE_DIRS ".")
 
-component_compile_options(-std=c++17)
+component_compile_options(-std=c++2a)
 
 # Create a SPIFFS image from the contents of the 'spiffs_image' directory
 # that fits the partition named 'storage'. FLASH_IN_PROJECT indicates that
