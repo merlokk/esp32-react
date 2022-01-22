@@ -11,89 +11,169 @@
 #include <string.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_spiffs.h"
+#include "esp_netif.h"
+#include "mdns.h"
+#include "esp_event.h"
+#include "esp_ota_ops.h"
+#include "nvs_flash.h"
 #include "mbedtls/md5.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "lwip/apps/netbiosns.h"
+
+#include "utils.h"
+#include "espcontrol.h"
 
 static const char *TAG = "main";
 
-static void read_hello_txt(void)
-{
-    ESP_LOGI(TAG, "Reading hello.txt");
+void sprintfs(bool printFS) {
+    struct dirent *ep;
 
-    // Open for reading hello.txt
-    FILE* f = fopen("/spiffs/hello.txt", "r");
-    if (f == NULL) {
-        ESP_LOGE(TAG, "Failed to open hello.txt");
-        return;
+	size_t total = 0;
+	size_t used = 0;
+	esp_spiffs_info(NULL, &total, &used);
+    ESP_LOGI(TAG, "Memory total: %zu used: %zu", total, used);
+    
+    if (printFS) {
+        ESP_LOGI(TAG, "--- files ---");
+        DIR* dir = opendir("/spiffs");
+        if (dir) {
+            while ((ep = readdir(dir)))
+              ESP_LOGI(TAG, "  %s", ep->d_name);
+
+            closedir(dir);
+        } else {
+            ESP_LOGW(TAG, "Can't open root directory");
+        }
     }
 
-    char buf[64];
-    memset(buf, 0, sizeof(buf));
-    fread(buf, 1, sizeof(buf), f);
-    fclose(f);
-
-    // Display the read contents from the file
-    ESP_LOGI(TAG, "Read from hello.txt: %s", buf);
+	return;
 }
 
-static void compute_alice_txt_md5(void)
+static void PrintTaskList() {
+    char ptrTaskList[1024] = {0};
+    vTaskList(ptrTaskList);
+    printf("Task\t\t State\t Prio\t Stack\t Num\t Core\n");
+    printf("*****************************************************\n");
+    printf("%s", ptrTaskList);
+}
+
+static bool initialise_mdns(void)
 {
-    ESP_LOGI(TAG, "Computing alice.txt MD5 hash");
-
-    // The file alice.txt lives under a subdirectory, though SPIFFS itself is flat
-    FILE* f = fopen("/spiffs/sub/alice.txt", "r");
-    if (f == NULL) {
-        ESP_LOGE(TAG, "Failed to open alice.txt");
-        return;
+    auto err = mdns_init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "mdns_init error: %d", err);
+        return false;
+    }
+    err = mdns_hostname_set("esp32");
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "mdns_hostname_set error: %d", err);
+        return false;
+    }
+    err = mdns_instance_name_set("esp32 react");
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "mdns_instance_name_set error: %d", err);
+        return false;
     }
 
-    // Read file and compute the digest chunk by chunk
-    #define MD5_MAX_LEN 16
+    mdns_txt_item_t serviceTxtData[] = {
+        {"board", "esp32"},
+        {"path", "/"}
+    };
 
-    char buf[64];
-    mbedtls_md5_context ctx;
-    unsigned char digest[MD5_MAX_LEN];
+    mdns_service_add("www.esp32", "_http", "_tcp", 80, serviceTxtData,
+         sizeof(serviceTxtData) / sizeof(serviceTxtData[0]));
 
-    mbedtls_md5_init(&ctx);
-    mbedtls_md5_starts_ret(&ctx);
+    netbiosns_init();
+    netbiosns_set_name("esp32");
 
-    size_t read;
+    ESP_LOGI(TAG, "MDNS init OK.");
+    return true;
+}
 
-    do {
-        read = fread((void*) buf, 1, sizeof(buf), f);
-        mbedtls_md5_update_ret(&ctx, (unsigned const char*) buf, read);
-    } while(read == sizeof(buf));
+bool HWInit() {
+    bool result = true;
 
-    mbedtls_md5_finish_ret(&ctx, digest);
-
-    // Create a string of the digest
-    char digest_str[MD5_MAX_LEN * 2];
-
-    for (int i = 0; i < MD5_MAX_LEN; i++) {
-        sprintf(&digest_str[i * 2], "%02x", (unsigned int)digest[i]);
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW(TAG, "nvs_flash_init fail. trying to erase nvs....");
+        ret = nvs_flash_erase();
+        if (ret != ESP_OK)
+          ESP_LOGE(TAG, "nvs_flash_erase fail");
+        ret = nvs_flash_init();
     }
 
-    // For reference, MD5 should be deeb71f585cbb3ae5f7976d5127faf2a
-    ESP_LOGI(TAG, "Computed MD5 hash of alice.txt: %s", digest_str);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "nvs_flash_init fail");
+        result = false;
+    }
 
-    fclose(f);
+    if (esp_netif_init()) {
+        ESP_LOGE(TAG, "esp_netif_init fail");
+        result = false;
+    }
+
+    if (esp_event_loop_create_default()) {
+        ESP_LOGE(TAG, "esp_event_loop_create_default fail");
+        result = false;
+    }
+
+    initialise_mdns();
+
+    return result;
+}
+
+void PrintESPInfo() {
+    esp_chip_info_t chipinfo;
+    esp_chip_info(&chipinfo);
+    ESP_LOGI(TAG, "Chip model: %s cores: %d revision: %d features: %s%s%s%s",
+             (chipinfo.model == 1)?"ESP32":"ESP32-S2",
+             chipinfo.cores,
+             chipinfo.revision,
+             (CHIP_FEATURE_EMB_FLASH & chipinfo.features)?"EmbeddedFlash ":"",
+             (CHIP_FEATURE_WIFI_BGN  & chipinfo.features)?"WiFi ":"",
+             (CHIP_FEATURE_BLE       & chipinfo.features)?"BluetoothLE ":"",
+             (CHIP_FEATURE_BT        & chipinfo.features)?"BluetoothClassic ":""
+             );
+    ESP_LOGI(TAG, "IDF version: %s", esp_get_idf_version());
+    const auto desc = esp_ota_get_app_description();
+    ESP_LOGI(TAG, "Project name: %s", desc->project_name);
+    ESP_LOGI(TAG, "Firmware version: %s date and time: %s %s", desc->version, desc->date, desc->time);
+    switch(esp_reset_reason()) {
+    case ESP_RST_UNKNOWN:   ESP_LOGI(TAG, "Reset reason can not be determined"); break;
+    case ESP_RST_POWERON:   ESP_LOGI(TAG, "Reset due to power-on event"); break;
+    case ESP_RST_EXT:       ESP_LOGI(TAG, "Reset by external pin (not applicable for ESP32)"); break;
+    case ESP_RST_SW:        ESP_LOGI(TAG, "Software reset via esp_restart"); break;
+    case ESP_RST_PANIC:     ESP_LOGI(TAG, "Software reset due to exception/panic"); break;
+    case ESP_RST_INT_WDT:   ESP_LOGI(TAG, "Reset (software or hardware) due to interrupt watchdog"); break;
+    case ESP_RST_TASK_WDT:  ESP_LOGI(TAG, "Reset due to task watchdog"); break;
+    case ESP_RST_WDT:       ESP_LOGI(TAG, "Reset due to other watchdogs"); break;
+    case ESP_RST_DEEPSLEEP: ESP_LOGI(TAG, "Reset after exiting deep sleep mode"); break;
+    case ESP_RST_BROWNOUT:  ESP_LOGI(TAG, "Brownout reset (software or hardware)"); break;
+    case ESP_RST_SDIO:      ESP_LOGI(TAG, "Reset over SDIO"); break;
+    default:
+        ESP_LOGI(TAG, "Reset reason unknown");
+    }
 }
 
 extern "C" void app_main(void)
 {
+    ESP_LOGI(TAG, "-------------------------------------");
+    PrintESPInfo();
+    ESP_LOGI(TAG, "-------------------------------------");
     ESP_LOGI(TAG, "Initializing SPIFFS");
 
     esp_vfs_spiffs_conf_t conf = {
       .base_path = "/spiffs",
-      .partition_label = NULL,
-      .max_files = 5,
-      .format_if_mount_failed = false
+      .partition_label = "storage",
+      .max_files = 20,
+      .format_if_mount_failed = true
     };
-
-    // Use settings defined above to initialize and mount SPIFFS filesystem.
-    // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
     esp_err_t ret = esp_vfs_spiffs_register(&conf);
 
     if (ret != ESP_OK) {
@@ -107,25 +187,31 @@ extern "C" void app_main(void)
         return;
     }
 
-    size_t total = 0, used = 0;
-    ret = esp_spiffs_info(NULL, &total, &used);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+    // print contents of filesystem
+    sprintfs(false);
+
+    if (!HWInit()) {
+        ESP_LOGE(TAG, "Hardware init error");
+    }
+    
+    uint8_t derived_mac_addr[6] = {0};
+    //Get MAC address for WiFi Station interface
+    if (esp_read_mac(derived_mac_addr, ESP_MAC_WIFI_STA) == ESP_OK) {
+        ESP_LOGI(TAG, "STA MAC address: %s", string_format_mac(derived_mac_addr).c_str());
     } else {
-        ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+        ESP_LOGE(TAG, "Get MAC error");
     }
 
-    /* The following calls demonstrate reading files from the generated SPIFFS
-     * image. The images should contain the same files and contents as the spiffs_image directory.
-     */
+    // load config from file system...
+    //auto &cfg = ESPConfig::getInstance();
+    //ESP_LOGI(TAG, "Configured WiFi mode: %s", cfg.GetModeStr().c_str());
 
-    // Read and display the contents of a small text file (hello.txt)
-    read_hello_txt();
+    vTaskDelay(pdMS_TO_TICKS(100));
+    
+    //xTaskCreatePinnedToCore(update_task,     "updater",  12000, NULL, UPDATE_TASK_PRIO,  NULL, tskNO_AFFINITY);
+    //xTaskCreatePinnedToCore(wifi_task,       "wifi",     8192, NULL, WIFI_TASK_PRIO,     NULL, tskNO_AFFINITY);
 
-    // Compute and display the MD5 hash of a large text file (alice.txt)
-    compute_alice_txt_md5();
+    //xTaskCreatePinnedToCore(espcontrol_task, "espcntrl", 4096, NULL, ESPCONTROL_TASK_PRIO,  NULL, tskNO_AFFINITY);
 
-    // All done, unmount partition and disable SPIFFS
-    esp_vfs_spiffs_unregister(NULL);
-    ESP_LOGI(TAG, "SPIFFS unmounted");
+    PrintTaskList();
 }
