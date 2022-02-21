@@ -8,7 +8,7 @@
 
 #include "messagesender.h"
 
-void espcontrol_task(void *);
+void espcontrol_init(void);
 
 enum cmdESPControl {
     ecmdNone,
@@ -23,7 +23,6 @@ class ESPControlTask {
     MessageSender<cmdESPControl, bool> msgSender;
 
     size_t RestartTime = 0;
-    size_t ShutdownTime = 0;
 
     ESPControlTask();
 public:

@@ -26,6 +26,7 @@
 #include "freertos/semphr.h"
 #include "lwip/apps/netbiosns.h"
 
+#include "prjconfig.h"
 #include "utils.h"
 #include "espcontrol.h"
 
@@ -211,7 +212,7 @@ extern "C" void app_main(void)
     //xTaskCreatePinnedToCore(update_task,     "updater",  12000, NULL, UPDATE_TASK_PRIO,  NULL, tskNO_AFFINITY);
     //xTaskCreatePinnedToCore(wifi_task,       "wifi",     8192, NULL, WIFI_TASK_PRIO,     NULL, tskNO_AFFINITY);
 
-    //xTaskCreatePinnedToCore(espcontrol_task, "espcntrl", 4096, NULL, ESPCONTROL_TASK_PRIO,  NULL, tskNO_AFFINITY);
+    espcontrol_init();
 
     PrintTaskList();
 }

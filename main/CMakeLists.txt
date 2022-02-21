@@ -1,5 +1,5 @@
 idf_component_register(SRCS "esp32-react.cpp"
-                            #"espcontrol.cpp"
+                            "espcontrol.cpp"
                        INCLUDE_DIRS ".")
 
 component_compile_options(-std=c++2a)

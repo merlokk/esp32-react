@@ -7,8 +7,8 @@
 #include "esp_log.h"
 #include "esp_err.h"
 
-#include "espconfig.h"
-#include "esppowerconnect.h"
+#include "prjconfig.h"
+//#include "espconfig.h"
 
 static const char *TAG = "CONTROL";
 
@@ -22,6 +22,10 @@ void espcontrol_task(void *) {
     }
 }
 
+void espcontrol_init(void) {
+    xTaskCreate(espcontrol_task, "espcontrol",  3000, NULL, ESP_CONTROL_TASK_PRIO,  NULL);
+}
+
 ESPControlTask::ESPControlTask() {
     eventCommand = xEventGroupCreate();
     msgSender.WakeUp = [this](){this->WakeUp();};
@@ -32,13 +36,12 @@ void ESPControlTask::WakeUp() {
 }
 
 void ESPControlTask::Execute() {
-    auto &power = ESPPowerConnect::getInstance();
     // if we have a message
     cmdESPControl cmd;
     if (msgSender.GetMessage(cmd)) {
         switch(cmd) {
         case ecmdRestart:
-            if (ESPConfig::getInstance().AllowRestart) {
+            if (false /*ESPConfig::getInstance().AllowRestart*/) {
                 ESP_LOGW(TAG, "Restart ESP32 in 2 seconds....");
                 RestartTime = xTaskGetTickCount() + pdMS_TO_TICKS(2000);
                 msgSender.PutMessage(true);
