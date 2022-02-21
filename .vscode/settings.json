@@ -1,3 +1,13 @@
 {
-    "idf.adapterTargetName": "esp32"
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+    "idf.adapterTargetName": "esp32",
+    "idf.customExtraPaths": "E:\\esp32-idf-tools\\.espressif\\tools\\xtensa-esp32-elf\\esp-2021r2-patch2-8.4.0\\xtensa-esp32-elf\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\xtensa-esp32s2-elf\\esp-2021r2-patch2-8.4.0\\xtensa-esp32s2-elf\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\xtensa-esp32s3-elf\\esp-2021r2-patch2-8.4.0\\xtensa-esp32s3-elf\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\riscv32-esp-elf\\esp-2021r2-patch2-8.4.0\\riscv32-esp-elf\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\esp32ulp-elf\\2.28.51-esp-20191205\\esp32ulp-elf-binutils\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\esp32s2ulp-elf\\2.28.51-esp-20191205\\esp32s2ulp-elf-binutils\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\cmake\\3.20.3\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\openocd-esp32\\v0.11.0-esp32-20211220\\openocd-esp32\\bin;E:\\esp32-idf-tools\\.espressif\\tools\\ninja\\1.10.2;E:\\esp32-idf-tools\\.espressif\\tools\\idf-exe\\1.0.3;E:\\esp32-idf-tools\\.espressif\\tools\\ccache\\4.3\\ccache-4.3-windows-64;E:\\esp32-idf-tools\\.espressif\\tools\\dfu-util\\0.9\\dfu-util-0.9-win64",
+    "idf.customExtraVars": "{\"OPENOCD_SCRIPTS\":\"E:\\\\esp32-idf-tools\\\\.espressif\\\\tools\\\\openocd-esp32\\\\v0.11.0-esp32-20211220/openocd-esp32/share/openocd/scripts\",\"IDF_CCACHE_ENABLE\":\"1\"}",
+    "idf.espIdfPathWin": "e:\\esp32-idf\\esp-idf",
+    "idf.openOcdConfigs": [
+        "board/esp32-wrover-kit-3.3v.cfg"
+    ],
+    "idf.portWin": "COM14",
+    "idf.pythonBinPathWin": "E:\\esp32-idf-tools\\.espressif\\python_env\\idf4.4_py3.8_env\\Scripts\\python.exe",
+    "idf.toolsPathWin": "E:\\esp32-idf-tools\\.espressif"
 }
