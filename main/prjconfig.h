@@ -1,0 +1,8 @@
+#ifndef PRJCONFIG_H
+#define PRJCONFIG_H
+
+#define ESP_CONTROL_TASK_PRIO 2
+
+
+
+#endif // PRJCONFIG_H
