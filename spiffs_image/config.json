@@ -1,0 +1,29 @@
+{
+    "Wifi": {
+        "Mode":"Client",
+        "APName":"ESP32React",
+        "APPassword":"er123456",
+        "APChannel":5,
+        "APHidden":false,
+        "ClientCredentials": [
+            {
+                "Name":"point1",
+                "Password":"passwd1_"
+            },
+            {
+                "Name":"point2",
+                "Password":"passwd2_"
+            },
+            {
+                "Name":"point3",
+                "Password":"passwd3_"
+            }
+        ]
+    },
+    "WEB": {
+        "Port":80,
+        "Login":"",
+        "Password":""
+    },
+    "AllowRestart":true
+}
