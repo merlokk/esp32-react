@@ -1,5 +1,7 @@
 idf_component_register(SRCS "esp32-react.cpp"
+                            "espfswrapper.cpp"
                             "mainfactory.cpp"
+                            "espconfig.cpp"
                             "espcontrol.cpp"
                        INCLUDE_DIRS ".")
 

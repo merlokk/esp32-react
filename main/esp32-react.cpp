@@ -207,8 +207,8 @@ extern "C" void app_main(void)
     auto& factory = MainFactory::getInstance();
 
     // load config from file system...
-    //auto &cfg = ESPConfig::getInstance();
-    //ESP_LOGI(TAG, "Configured WiFi mode: %s", cfg.GetModeStr().c_str());
+    auto &cfg = factory.GetESPConfig();
+    ESP_LOGI(TAG, "Configured WiFi mode: %s", cfg.GetModeStr().c_str());
 
     vTaskDelay(pdMS_TO_TICKS(100));
     
