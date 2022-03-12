@@ -7,7 +7,6 @@
 #include "esp_log.h"
 #include "esp_err.h"
 
-#include "prjconfig.h"
 //#include "espconfig.h"
 
 static const char *TAG = "CONTROL";
@@ -22,11 +21,7 @@ void espcontrol_task(void *) {
     }
 }
 
-void espcontrol_init(void) {
-    xTaskCreate(espcontrol_task, "espcontrol",  3000, NULL, ESP_CONTROL_TASK_PRIO,  NULL);
-}
-
-ESPControlTask::ESPControlTask() {
+ESPControlTask::ESPControlTask() : ESPBaseThread("espcontrol", ESP_CONTROL_TASK_PRIO, 3000) {
     eventCommand = xEventGroupCreate();
     msgSender.WakeUp = [this](){this->WakeUp();};
 }

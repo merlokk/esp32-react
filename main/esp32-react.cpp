@@ -29,6 +29,7 @@
 #include "prjconfig.h"
 #include "utils.h"
 #include "espcontrol.h"
+#include "mainfactory.h"
 
 static const char *TAG = "main";
 
@@ -203,6 +204,8 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Get MAC error");
     }
 
+    auto& factory = MainFactory::getInstance();
+
     // load config from file system...
     //auto &cfg = ESPConfig::getInstance();
     //ESP_LOGI(TAG, "Configured WiFi mode: %s", cfg.GetModeStr().c_str());
@@ -211,8 +214,6 @@ extern "C" void app_main(void)
     
     //xTaskCreatePinnedToCore(update_task,     "updater",  12000, NULL, UPDATE_TASK_PRIO,  NULL, tskNO_AFFINITY);
     //xTaskCreatePinnedToCore(wifi_task,       "wifi",     8192, NULL, WIFI_TASK_PRIO,     NULL, tskNO_AFFINITY);
-
-    espcontrol_init();
 
     PrintTaskList();
 }

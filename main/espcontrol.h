@@ -6,9 +6,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 
+#include "prjconfig.h"
+#include "espbase.h"
 #include "messagesender.h"
-
-void espcontrol_init(void);
 
 enum cmdESPControl {
     ecmdNone,
@@ -18,7 +18,7 @@ enum cmdESPControl {
 
 static const EventBits_t eventESPControlWakeUp = (1 << 0);
 
-class ESPControlTask {
+class ESPControlTask : public ESPBaseThread<ESPControlTask> {
     EventGroupHandle_t eventCommand;
     MessageSender<cmdESPControl, bool> msgSender;
 
