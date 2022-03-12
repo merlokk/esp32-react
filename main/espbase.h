@@ -10,7 +10,6 @@ private:
 public:
     ESPBase();
     ~ESPBase();
-
 };
 
 template<typename T>
@@ -28,7 +27,6 @@ private:
 
 	TaskHandle_t taskHandle;
 };
-
 
 template<typename T>
 ESPBaseThread<T>::ESPBaseThread(const char* name, UBaseType_t priority, uint32_t stackDepth) {
@@ -57,7 +55,5 @@ void ESPBaseThread<T>::task(void* params) {
 	    p->Execute();
     }
 }
-
-
 
 #endif
