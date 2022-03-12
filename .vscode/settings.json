@@ -11,6 +11,7 @@
     "idf.pythonBinPathWin": "E:\\esp32-idf-tools\\.espressif\\python_env\\idf4.4_py3.8_env\\Scripts\\python.exe",
     "idf.toolsPathWin": "E:\\esp32-idf-tools\\.espressif",
     "files.associations": {
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "*.ipp": "cpp"
     }
 }
